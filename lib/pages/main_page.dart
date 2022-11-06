@@ -35,20 +35,12 @@ class _MainPageState extends State<MainPage> {
                       const AnimatedMainTitle(),
                       const SizedBox(
                         height: 10,
-                        child: VerticalDivider(
-                          indent: 10,
-                          endIndent: 10,
-                        ),
                       ),
                       Text(
                           'Some API endpoints block requests coming from Cloud providers IPs.',
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(
                         height: 150,
-                        child: VerticalDivider(
-                          indent: 10,
-                          endIndent: 10,
-                        ),
                       ),
                       AnimatedSwitcher(
                         duration: const Duration(seconds: 1),
@@ -139,7 +131,7 @@ class _MainPageState extends State<MainPage> {
                                 ],
                               ),
                       ),
-                      const SizedBox(height: 100),
+                      const SizedBox(height: 150),
                       _buildFAQ(),
                     ],
                   ),
@@ -161,6 +153,7 @@ class _MainPageState extends State<MainPage> {
   ExpansionPanelList _buildFAQ() {
     return ExpansionPanelList.radio(
         dividerColor: cPrimaryColor,
+        elevation: 0,
         expandedHeaderPadding: EdgeInsets.zero,
         children: [
           _faqExpansionPanel(1, "How does it work?",
