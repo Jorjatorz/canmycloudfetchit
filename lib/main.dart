@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => SearchStateNotifier(),
+      create: (_) => FetchStateNotifier(),
       child: MaterialApp(
         title: 'Can my Cloud fetch it?',
         themeMode: ThemeMode.dark,

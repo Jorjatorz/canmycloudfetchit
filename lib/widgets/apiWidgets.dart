@@ -22,6 +22,33 @@ abstract class APIProvider {
   Future<APIResult> fetchAPI(String url);
 }
 
+class LocalAPIProvider implements APIProvider {
+  @override
+  Widget getTitleWidget(context) {
+    return Text(
+      "Web Server",
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(color: providerColor, fontWeight: FontWeight.bold),
+    );
+  }
+
+  @override
+  Future<APIResult> fetchAPI(String url) {
+    return Future<APIResult>.delayed(
+      const Duration(seconds: 2),
+      () => APIResult(
+          valid: Random().nextBool(),
+          code: 401,
+          message: "This is a fake error message"),
+    );
+  }
+
+  @override
+  Color get providerColor => Colors.white;
+}
+
 class AmazonAPIProvider implements APIProvider {
   @override
   Widget getTitleWidget(context) {
@@ -52,7 +79,7 @@ class AmazonAPIProvider implements APIProvider {
 class APIWidget extends StatefulWidget {
   const APIWidget({super.key, required this.apiProvider});
 
-  final AmazonAPIProvider apiProvider;
+  final APIProvider apiProvider;
 
   @override
   State<APIWidget> createState() => _APIWidgetState();

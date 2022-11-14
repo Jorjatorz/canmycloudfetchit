@@ -13,11 +13,11 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  // Global key for the url input
-  final _formKey = GlobalKey<FormState>();
-
   @override
   Widget build(BuildContext context) {
+    FetchStateNotifier currentSearchState =
+        Provider.of<FetchStateNotifier>(context);
+
     return Scaffold(
       backgroundColor: cBackgroundColor,
       body: Column(
@@ -43,94 +43,20 @@ class _MainPageState extends State<MainPage> {
                         height: 150,
                       ),
                       AnimatedSwitcher(
-                        duration: const Duration(seconds: 1),
-                        layoutBuilder: (currentChild, previousChildren) {
-                          return Stack(
-                            alignment: Alignment.topCenter,
-                            children: [
-                              ...previousChildren,
-                              if (currentChild != null) currentChild,
-                            ],
-                          );
-                        },
-                        child: Provider.of<SearchStateNotifier>(context)
-                                    .currentState ==
-                                SearchState.noSearch
-                            ? SizedBox(
-                                child: Column(
-                                  children: [
-                                    Text(
-                                        'Paste the API url and we will retrieve which providers can fetch from it.',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium),
-                                    const SizedBox(
-                                      height: 10,
-                                    ),
-                                    Form(
-                                      key: _formKey,
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SizedBox(
-                                            width: 600,
-                                            child: TextFormField(
-                                              textAlign: TextAlign.center,
-                                              decoration: const InputDecoration(
-                                                  border: OutlineInputBorder(),
-                                                  hintText:
-                                                      "https://www.mycooldomain.com/api/"),
-                                              validator: (value) {
-                                                if (value == null ||
-                                                    value.isEmpty) {
-                                                  return 'Please enter the API url to check';
-                                                }
-                                                return null;
-                                              },
-                                            ),
-                                          ),
-                                          const SizedBox(
-                                            height: 10,
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              if (_formKey.currentState!
-                                                  .validate()) {
-                                                Provider.of<SearchStateNotifier>(
-                                                        context,
-                                                        listen: false)
-                                                    .startSearch("test");
-                                              }
-                                            },
-                                            child: const Text('Check'),
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : Column(
-                                children: [
-                                  ResultsWidget(
-                                      searchString:
-                                          Provider.of<SearchStateNotifier>(
-                                                  context)
-                                              .searchString),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  ElevatedButton(
-                                      onPressed: () =>
-                                          Provider.of<SearchStateNotifier>(
-                                                  context,
-                                                  listen: false)
-                                              .resetSearch(),
-                                      child: const Text("Search again"))
-                                ],
-                              ),
-                      ),
+                          duration: const Duration(seconds: 1),
+                          layoutBuilder: (currentChild, previousChildren) {
+                            return Stack(
+                              alignment: Alignment.topCenter,
+                              children: [
+                                ...previousChildren,
+                                if (currentChild != null) currentChild,
+                              ],
+                            );
+                          },
+                          child: currentSearchState.currentState ==
+                                  FetchState.noFetch
+                              ? const APISearchBarWidget()
+                              : const APIFetchWidget()),
                       const SizedBox(height: 150),
                       _buildFAQ(),
                     ],
@@ -186,6 +112,72 @@ Keep in mind that this page uses the free-tier to reduce costs, so if a Cloud pr
       body: Text(
         body,
         textAlign: TextAlign.start,
+      ),
+    );
+  }
+}
+
+class APISearchBarWidget extends StatefulWidget {
+  const APISearchBarWidget({Key? key}) : super(key: key);
+
+  @override
+  State<APISearchBarWidget> createState() => _APISearchBarWidgetState();
+}
+
+class _APISearchBarWidgetState extends State<APISearchBarWidget> {
+  // Global key for the url input
+  final _formKey = GlobalKey<FormState>();
+  String? _fetchString;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      child: Column(
+        children: [
+          Text(
+              'Paste the API url and we will retrieve which providers can fetch from it.',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(
+            height: 10,
+          ),
+          Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 600,
+                  child: TextFormField(
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText:
+                            "https://www.mycooldomain.com/api/healthcheck"),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter the API url to check';
+                      }
+                      _fetchString = value;
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      Provider.of<FetchStateNotifier>(context, listen: false)
+                          .startLocalFetch(_fetchString!);
+                    }
+                  },
+                  child: const Text('Check'),
+                )
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

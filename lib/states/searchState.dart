@@ -1,24 +1,35 @@
 import 'package:flutter/material.dart';
 
-enum SearchState { noSearch, searching }
+enum FetchState { noFetch, fetchingLocal, fetchingCloud }
 
-class SearchStateNotifier extends ChangeNotifier {
-  // Class to control the search state of the app
+class FetchStateNotifier extends ChangeNotifier {
+  // Class to control the fetch state of the app
 
-  SearchState currentState = SearchState.noSearch;
-  String? searchString;
+  FetchState currentState = FetchState.noFetch;
+  String? fetchString;
+  bool finished = false;
 
-  void startSearch(String newString) {
-    searchString = newString;
-    setSearchState(SearchState.searching);
+  void startLocalFetch(String newString) {
+    fetchString = newString;
+    seFetchState(FetchState.fetchingLocal);
   }
 
-  void resetSearch() {
-    searchString = null;
-    setSearchState(SearchState.noSearch);
+  void startCloudFetch(String newString) {
+    fetchString = newString;
+    seFetchState(FetchState.fetchingCloud);
   }
 
-  void setSearchState(SearchState newState) {
+  void fetchFinished() {
+    finished = true;
+  }
+
+  void resetFetch() {
+    fetchString = null;
+    finished = false;
+    seFetchState(FetchState.noFetch);
+  }
+
+  void seFetchState(FetchState newState) {
     currentState = newState;
     notifyListeners();
   }
