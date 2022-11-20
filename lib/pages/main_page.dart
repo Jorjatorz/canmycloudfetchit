@@ -1,6 +1,6 @@
 import 'package:cloud_api_fetcher/design/constants.dart';
 import 'package:cloud_api_fetcher/states/searchState.dart';
-import 'package:cloud_api_fetcher/widgets/resultsWidget.dart';
+import 'package:cloud_api_fetcher/widgets/apiWidgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rainbow_color/rainbow_color.dart';
@@ -58,7 +58,7 @@ class _MainPageState extends State<MainPage> {
                               ? const APISearchBarWidget()
                               : const APIFetchWidget()),
                       const SizedBox(height: 150),
-                      _buildFAQ(),
+                      const FAQWidget(),
                     ],
                   ),
                 ),
@@ -75,8 +75,14 @@ class _MainPageState extends State<MainPage> {
       ),
     );
   }
+}
 
-  ExpansionPanelList _buildFAQ() {
+// WIDGETS
+class FAQWidget extends StatelessWidget {
+  const FAQWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return ExpansionPanelList.radio(
         dividerColor: cPrimaryColor,
         elevation: 0,
@@ -87,13 +93,13 @@ class _MainPageState extends State<MainPage> {
 
 Depending on the API return code a success or failure marker will appear next to each Cloud provider."""),
           _faqExpansionPanel(2, "What can I fetch?",
-              """This page was built with API end-points in mind, albeit you can target any HTTP endpoint. It is recommended to use the API healthcheck endpoint to avoid higher latencies."""),
+              """This page was built with API end-points in mind, albeit you can target any HTTP endpoint. It is recommended to use the API healthcheck endpoint."""),
           _faqExpansionPanel(3, "Will more providers be supported?",
               """The number of supported providers will increase over time.
 
 Keep in mind that this page uses the free-tier to reduce costs, so if a Cloud provider do not have a free-tier then it will not be added in the near future."""),
           _faqExpansionPanel(4, "Are endpoints and results cached?",
-              "No, but they will be in the future.")
+              "No, but they will be soon.")
         ]);
   }
 
@@ -157,6 +163,13 @@ class _APISearchBarWidgetState extends State<APISearchBarWidget> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter the API url to check';
                       }
+                      String pattern =
+                          r'(http|https)://[\w-]+(\.[\w-]+)+([\w.,@?^=%&amp;:/~+#-]*[\w@?^=%&amp;/~+#-])?';
+                      final regExp = RegExp(pattern);
+                      if (!regExp.hasMatch(value)) {
+                        return "Please enter a valid URL. Example: https://www.mycooldomain.com/api/healthcheck";
+                      }
+
                       _fetchString = value;
                       return null;
                     },
@@ -240,6 +253,66 @@ class _AnimatedMainTitleState extends State<AnimatedMainTitle>
           const TextSpan(text: ' fetch it?'),
         ],
       ),
+    );
+  }
+}
+
+class APIFetchWidget extends StatefulWidget {
+  const APIFetchWidget({super.key});
+
+  @override
+  State<APIFetchWidget> createState() => _APIFetchWidgetState();
+}
+
+class _APIFetchWidgetState extends State<APIFetchWidget> {
+  APIWidgetsController? apisController;
+  APIProvider? pp;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    apisController ??=
+        APIWidgetsController(Provider.of<FetchStateNotifier>(context));
+  }
+
+  @override
+  void dispose() {
+    apisController!.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    FetchStateNotifier currentSearchState =
+        Provider.of<FetchStateNotifier>(context);
+
+    if (currentSearchState.fetchString == null) {
+      return const SizedBox();
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (currentSearchState.currentState == FetchState.fetchingLocal)
+          APIWidget(
+            apiProvider: apisController!.getLocalAPIProvider(),
+          )
+        else
+          ...apisController!.getCloudAPIProviders().map((provider) => APIWidget(
+                apiProvider: provider,
+              )),
+        const SizedBox(
+          height: 10,
+        ),
+        if (currentSearchState.finished)
+          ElevatedButton(
+              onPressed: () =>
+                  Provider.of<FetchStateNotifier>(context, listen: false)
+                      .resetFetch(),
+              child: const Text("Search again"))
+      ],
     );
   }
 }

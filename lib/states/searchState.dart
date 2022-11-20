@@ -14,13 +14,14 @@ class FetchStateNotifier extends ChangeNotifier {
     seFetchState(FetchState.fetchingLocal);
   }
 
-  void startCloudFetch(String newString) {
-    fetchString = newString;
+  void startCloudFetch() {
+    assert(currentState == FetchState.fetchingLocal);
     seFetchState(FetchState.fetchingCloud);
   }
 
   void fetchFinished() {
     finished = true;
+    notifyListeners();
   }
 
   void resetFetch() {

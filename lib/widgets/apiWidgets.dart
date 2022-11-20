@@ -1,10 +1,16 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:math';
-
-import 'package:cloud_api_fetcher/design/constants.dart';
 import 'package:flutter/material.dart';
 
+import 'package:cloud_api_fetcher/design/constants.dart';
+import 'package:cloud_api_fetcher/states/searchState.dart';
+import 'package:http/http.dart' as http;
+
 class APIResult {
-  bool valid; // True if the request returned sucess
+  // Result of a cloud API request
+
+  bool valid; // True if the request returned succeded
   int? code; // Error code
   String? message; // Error message
 
@@ -16,68 +22,132 @@ class APIResult {
 }
 
 abstract class APIProvider {
-  final Color providerColor = Colors.cyan;
+  // Class that manages the fetch request to a Cloud provider
 
-  Widget getTitleWidget(context);
+  final String providerName;
+  final Color providerColor;
+  final APIWidgetsController _controller;
+  Future<APIResult>? fetchFuture;
+
+  APIProvider(this._controller, this.providerColor, this.providerName);
+
+  Widget getTitleWidget(context) {
+    return Text(
+      providerName,
+      style: Theme.of(context)
+          .textTheme
+          .titleMedium
+          ?.copyWith(color: providerColor, fontWeight: FontWeight.bold),
+    );
+  }
+
   Future<APIResult> fetchAPI(String url);
 }
 
-class LocalAPIProvider implements APIProvider {
-  @override
-  Widget getTitleWidget(context) {
-    return Text(
-      "Web Server",
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(color: providerColor, fontWeight: FontWeight.bold),
-    );
-  }
+class LocalAPIProvider extends APIProvider {
+  LocalAPIProvider(APIWidgetsController controller)
+      : super(controller, Colors.white, "Web Server");
 
   @override
   Future<APIResult> fetchAPI(String url) {
-    return Future<APIResult>.delayed(
-      const Duration(seconds: 2),
-      () => APIResult(
-          valid: Random().nextBool(),
-          code: 401,
-          message: "This is a fake error message"),
-    );
-  }
+    fetchFuture = Future<APIResult>(
+      () async {
+        APIResult? result;
+        try {
+          final request = await http.head(Uri.parse(url), headers: {
+            "Access-Control-Allow-Origin": "*",
+            'Content-Type': 'application/json',
+            'Accept': '*/*'
+          }).timeout(const Duration(seconds: 5));
 
-  @override
-  Color get providerColor => Colors.white;
+          result = APIResult(
+              valid: request.statusCode < 400,
+              code: request.statusCode,
+              message: request.reasonPhrase);
+        } on TimeoutException catch (_) {
+          result = APIResult(valid: false, code: 404, message: "Timeout error");
+        } on SocketException catch (_) {
+          result =
+              APIResult(valid: false, code: 404, message: "Connection error");
+        }
+
+        _controller.notifyLocalProviderFinished(this, result);
+        return result;
+      },
+    );
+    return fetchFuture!;
+  }
 }
 
-class AmazonAPIProvider implements APIProvider {
-  @override
-  Widget getTitleWidget(context) {
-    return Text(
-      "AWS",
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(color: providerColor, fontWeight: FontWeight.bold),
-    );
-  }
+class AWSAPIProvider extends APIProvider {
+  AWSAPIProvider(APIWidgetsController controller)
+      : super(controller, Colors.orange, "AWS");
 
   @override
   Future<APIResult> fetchAPI(String url) {
-    return Future<APIResult>.delayed(
-      const Duration(seconds: 2),
-      () => APIResult(
+    fetchFuture = Future<APIResult>.delayed(const Duration(seconds: 2), () {
+      _controller.notifyCloudProviderFinished(this);
+      return APIResult(
           valid: Random().nextBool(),
           code: 401,
-          message: "This is a fake error message"),
-    );
+          message: "This is a fake error message");
+    });
+
+    return fetchFuture!;
+  }
+}
+
+class APIWidgetsController {
+  // Creates and controls the different APIProviders.
+
+  List<APIProvider> providers = [];
+  final FetchStateNotifier stateNotifier;
+  int finishedCloudProviders = 0;
+
+  APIWidgetsController(this.stateNotifier) {
+    // First provider will always be the local provider
+    providers.add(LocalAPIProvider(this)..fetchAPI(stateNotifier.fetchString!));
+
+    // Cloud providers
+    providers.add(AWSAPIProvider(this));
   }
 
-  @override
-  Color get providerColor => Colors.orange;
+  void dispose() {
+    providers.clear();
+  }
+
+  APIProvider getLocalAPIProvider() {
+    return providers.first;
+  }
+
+  List<APIProvider> getCloudAPIProviders() {
+    return providers.sublist(1);
+  }
+
+  void notifyLocalProviderFinished(APIProvider provider, APIResult result) {
+    if (result.valid) {
+      // Change state and start fetching
+      stateNotifier.startCloudFetch();
+      for (provider in getCloudAPIProviders()) {
+        provider.fetchAPI(stateNotifier.fetchString!);
+      }
+    } else {
+      stateNotifier.fetchFinished();
+    }
+  }
+
+  void notifyCloudProviderFinished(APIProvider provider) {
+    finishedCloudProviders++;
+    if (finishedCloudProviders == (providers.length - 1)) {
+      // Count all except the local provider
+      stateNotifier.fetchFinished();
+    }
+  }
 }
 
 class APIWidget extends StatefulWidget {
-  const APIWidget({super.key, required this.apiProvider});
+  APIWidget({required this.apiProvider})
+      : super(key: ValueKey(apiProvider.providerName));
 
   final APIProvider apiProvider;
 
@@ -109,7 +179,7 @@ class _APIWidgetState extends State<APIWidget> {
         children: [
           widget.apiProvider.getTitleWidget(context),
           FutureBuilder<APIResult>(
-            future: widget.apiProvider.fetchAPI("asdasda"),
+            future: widget.apiProvider.fetchFuture,
             builder: (BuildContext context, AsyncSnapshot<APIResult> snapshot) {
               List<Widget> children;
               if (snapshot.hasData) {
