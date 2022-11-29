@@ -85,13 +85,34 @@ class AWSAPIProvider extends APIProvider {
 
   @override
   Future<APIResult> fetchAPI(String url) {
-    fetchFuture = Future<APIResult>.delayed(const Duration(seconds: 2), () {
-      _controller.notifyCloudProviderFinished(this);
-      return APIResult(
-          valid: Random().nextBool(),
-          code: 401,
-          message: "This is a fake error message");
-    });
+    fetchFuture = Future<APIResult>(
+      () async {
+        APIResult? result;
+        try {
+          final request = await http.get(
+              Uri.parse(
+                  "https://zb3gzdwpe4.execute-api.eu-west-3.amazonaws.com/production/perform-fetch?url=$url"),
+              headers: {
+                "Access-Control-Allow-Origin": "*",
+                'Content-Type': 'application/json',
+                'Accept': '*/*'
+              }).timeout(const Duration(seconds: 5));
+
+          result = APIResult(
+              valid: request.statusCode < 400,
+              code: request.statusCode,
+              message: request.reasonPhrase);
+        } on TimeoutException catch (_) {
+          result = APIResult(valid: false, code: 404, message: "Timeout error");
+        } on SocketException catch (_) {
+          result =
+              APIResult(valid: false, code: 404, message: "Connection error");
+        }
+
+        _controller.notifyCloudProviderFinished(this);
+        return result;
+      },
+    );
 
     return fetchFuture!;
   }
