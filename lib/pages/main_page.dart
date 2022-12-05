@@ -65,11 +65,21 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           ),
-          const Align(
+          Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text("Created by Jorge Sánchez Cremades"),
+                padding: const EdgeInsets.all(8.0),
+                child: RichText(
+                    text: TextSpan(
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  text: 'Created by ',
+                  children: const <TextSpan>[
+                    TextSpan(
+                        text: 'Jorge Sánchez Cremades',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    TextSpan(text: ' - v0.5'),
+                  ],
+                )),
               ))
         ],
       ),
@@ -89,7 +99,7 @@ class FAQWidget extends StatelessWidget {
         expandedHeaderPadding: EdgeInsets.zero,
         children: [
           _faqExpansionPanel(1, "How does it work?",
-              """The provided API url will be sent to the supported Cloud providers and each one will run a HEAD request against it. (i.e. a body-less GET request)
+              """First a query from the Web Server will be issued to check if the endpoint is active. Then the provided API url will be sent to the supported Cloud providers and each one will run a HEAD request against it. (i.e. a body-less GET request)
 
 Depending on the API return code a success or failure marker will appear next to each Cloud provider."""),
           _faqExpansionPanel(2, "What can I fetch?",
@@ -295,14 +305,30 @@ class _APIFetchWidgetState extends State<APIFetchWidget> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (currentSearchState.currentState == FetchState.fetchingLocal)
-          APIWidget(
-            apiProvider: apisController!.getLocalAPIProvider(),
-          )
-        else
-          ...apisController!.getCloudAPIProviders().map((provider) => APIWidget(
-                apiProvider: provider,
-              )),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            APIWidget(
+              apiProvider: apisController!.getLocalAPIProvider(),
+            ),
+            if (currentSearchState.currentState ==
+                FetchState.fetchingCloud) ...[
+              Container(
+                width: 100,
+                height: 1,
+                color: Colors.white,
+              ),
+              Column(
+                children: apisController!
+                    .getCloudAPIProviders()
+                    .map((provider) => APIWidget(
+                          apiProvider: provider,
+                        ))
+                    .toList(),
+              )
+            ]
+          ],
+        ),
         const SizedBox(
           height: 10,
         ),
