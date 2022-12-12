@@ -77,7 +77,7 @@ class _MainPageState extends State<MainPage> {
                     TextSpan(
                         text: 'Jorge Sánchez Cremades',
                         style: TextStyle(fontWeight: FontWeight.bold)),
-                    TextSpan(text: ' - v0.5'),
+                    TextSpan(text: ' - v0.5 (beta)'),
                   ],
                 )),
               ))
@@ -153,8 +153,25 @@ class _APISearchBarWidgetState extends State<APISearchBarWidget> {
           Text(
               'Paste the API url and we will retrieve which providers can fetch from it.',
               style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(
-            height: 10,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: RichText(
+                text: TextSpan(
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium!
+                  .copyWith(color: Colors.amber),
+              text: 'Warning: ',
+              children: <TextSpan>[
+                TextSpan(
+                    text:
+                        'The inserted endpoint or your browser must allow CORS in order to work.',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium!
+                        .copyWith(color: const Color(0xFFA3A4A7))),
+              ],
+            )),
           ),
           Form(
             key: _formKey,

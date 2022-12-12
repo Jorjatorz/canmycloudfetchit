@@ -67,6 +67,8 @@ class LocalAPIProvider extends APIProvider {
         } on SocketException catch (_) {
           result =
               APIResult(valid: false, code: 404, message: "Connection error");
+        } catch (e) {
+          result = APIResult(valid: false, code: 404, message: e.toString());
         }
 
         _controller.notifyLocalProviderFinished(this, result);
@@ -101,7 +103,9 @@ class AWSAPIProvider extends APIProvider {
         } on SocketException catch (_) {
           result =
               APIResult(valid: false, code: 404, message: "Connection error");
-        }
+        } catch (e) {
+          result = APIResult(valid: false, code: 404, message: e.toString());
+        } // TODO REfactor duplicated code between APIProviders
 
         _controller.notifyCloudProviderFinished(this);
         return result;
@@ -209,10 +213,13 @@ class _APIWidgetState extends State<APIWidget> {
                   ];
                 } else {
                   children = <Widget>[
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 30,
+                    Tooltip(
+                      message: "${result.code} - ${result.message}",
+                      child: const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 30,
+                      ),
                     ),
                   ];
                 }
