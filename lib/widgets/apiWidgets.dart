@@ -54,11 +54,9 @@ class LocalAPIProvider extends APIProvider {
       () async {
         APIResult? result;
         try {
-          final request = await http.head(Uri.parse(url), headers: {
-            "Access-Control-Allow-Origin": "*",
-            'Content-Type': 'application/json',
-            'Accept': '*/*'
-          }).timeout(const Duration(seconds: 5));
+          final request = await http
+              .head(Uri.parse(url))
+              .timeout(const Duration(seconds: 5));
 
           result = APIResult(
               valid: request.statusCode < 400,
@@ -89,14 +87,10 @@ class AWSAPIProvider extends APIProvider {
       () async {
         APIResult? result;
         try {
-          final request = await http.get(
-              Uri.parse(
-                  "https://zb3gzdwpe4.execute-api.eu-west-3.amazonaws.com/production/perform-fetch?url=$url"),
-              headers: {
-                "Access-Control-Allow-Origin": "*",
-                'Content-Type': 'application/json',
-                'Accept': '*/*'
-              }).timeout(const Duration(seconds: 5));
+          final request = await http
+              .get(Uri.parse(
+                  "https://zb3gzdwpe4.execute-api.eu-west-3.amazonaws.com/production/perform-fetch?url=$url"))
+              .timeout(const Duration(seconds: 5));
 
           result = APIResult(
               valid: request.statusCode < 400,
